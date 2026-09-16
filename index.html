@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Your Financial Character — FinLit Zambia</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --g:#22C55E;--gd:#15803D;--gx:#14532D;--gl:#F0FDF4;--gm:#DCFCE7;
+  --gol:#C9A83C;--gold:#FDF8EC;--ink:#111827;--ink2:#374151;--ink3:#6B7280;
+  --bg:#F8FAFC;--w:#ffffff;--bd:#E5E7EB;--bd2:#F3F4F6;
+  --red:#DC2626;--redl:#FEF2F2;--pur:#7C3AED;--purl:#F5F3FF;
+  --ff:'DM Sans',system-ui,sans-serif;--fm:'DM Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--ff);background:var(--bg);color:var(--ink);line-height:1.55;padding-bottom:40px}
+
+.hero{background:linear-gradient(140deg,var(--gx) 0%,#0a2617 100%);color:#fff;
+  padding:24px 20px 28px;position:relative;overflow:hidden}
+.hero-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px}
+.hero-top .kicker{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+  color:var(--gol);margin-bottom:4px}
+.hero-top h1{font-size:19px;font-weight:800}
+.logout-btn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);
+  color:rgba(255,255,255,.85);font-size:11px;font-weight:700;padding:7px 13px;
+  border-radius:20px;cursor:pointer;font-family:inherit}
+
+.nw-label{font-size:11px;color:rgba(255,255,255,.6);text-transform:uppercase;
+  letter-spacing:1.2px;margin-bottom:4px}
+.nw-value{font-size:34px;font-weight:800;font-family:var(--fm);letter-spacing:-1px}
+.nw-change{font-size:12.5px;margin-top:4px;font-weight:600}
+.nw-change.up{color:#86EFAC}
+.nw-change.down{color:#FCA5A5}
+
+.chart-wrap{padding:16px 20px 4px;margin-top:-8px}
+#nwChart{width:100%;height:120px}
+
+.body{padding:20px;max-width:640px;margin:0 auto}
+
+.grid4{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.stat{background:var(--w);border:1px solid var(--bd);border-radius:14px;padding:14px 16px}
+.stat-ic{font-size:18px;margin-bottom:6px;display:block}
+.stat-l{font-size:11px;color:var(--ink3);font-weight:600;text-transform:uppercase;
+  letter-spacing:.6px;margin-bottom:3px}
+.stat-v{font-size:18px;font-weight:800;font-family:var(--fm);color:var(--ink)}
+.stat-v.neg{color:var(--red)}
+
+.rep-card{background:var(--w);border:1px solid var(--bd);border-radius:14px;
+  padding:15px 17px;margin-bottom:20px;display:flex;align-items:center;gap:13px}
+.rep-badge{width:46px;height:46px;border-radius:50%;background:var(--purl);
+  display:flex;align-items:center;justify-content:center;font-size:15px;
+  font-weight:800;color:var(--pur);font-family:var(--fm);flex-shrink:0}
+.rep-text .l{font-size:11px;color:var(--ink3);font-weight:600;text-transform:uppercase;
+  letter-spacing:.6px}
+.rep-text .v{font-size:14.5px;font-weight:700;color:var(--ink);margin-top:1px}
+
+.nav-links{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.nav-link{background:var(--w);border:1px solid var(--bd);border-radius:14px;
+  padding:16px;text-decoration:none;display:flex;flex-direction:column;gap:6px;
+  transition:border-color .15s}
+.nav-link:hover{border-color:var(--g)}
+.nav-link .ic{font-size:22px}
+.nav-link .t{font-size:13.5px;font-weight:700;color:var(--ink)}
+.nav-link .s{font-size:11.5px;color:var(--ink3)}
+
+.loading{text-align:center;padding:60px 20px;color:var(--ink3);font-size:13px}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-top">
+    <div>
+      <div class="kicker">Financial Character</div>
+      <h1 id="displayName">Loading…</h1>
+    </div>
+    <button class="logout-btn" onclick="logOut()">Log out</button>
+  </div>
+  <div class="nw-label">Net worth</div>
+  <div class="nw-value" id="netWorthValue">K 0.00</div>
+  <div class="nw-change" id="netWorthChange"></div>
+</div>
+
+<div class="chart-wrap">
+  <canvas id="nwChart"></canvas>
+</div>
+
+<div class="body">
+
+  <div class="grid4">
+    <div class="stat">
+      <span class="stat-ic">💵</span>
+      <div class="stat-l">Cash at hand</div>
+      <div class="stat-v" id="cashValue">—</div>
+    </div>
+    <div class="stat">
+      <span class="stat-ic">📈</span>
+      <div class="stat-l">Investments</div>
+      <div class="stat-v" id="investValue">—</div>
+    </div>
+    <div class="stat">
+      <span class="stat-ic">🏪</span>
+      <div class="stat-l">Ventures</div>
+      <div class="stat-v" id="ventureValue">—</div>
+    </div>
+    <div class="stat">
+      <span class="stat-ic">📋</span>
+      <div class="stat-l">Debt owed</div>
+      <div class="stat-v neg" id="debtValue">—</div>
+    </div>
+  </div>
+
+  <div class="rep-card">
+    <div class="rep-badge" id="repScore">—</div>
+    <div class="rep-text">
+      <div class="l">Financial reputation</div>
+      <div class="v" id="repLabel">Loading…</div>
+    </div>
+  </div>
+
+  <div class="nav-links">
+    <a href="trade.html" class="nav-link">
+      <span class="ic">📊</span>
+      <span class="t">Trade</span>
+      <span class="s">Buy or sell instruments</span>
+    </a>
+    <a href="ventures.html" class="nav-link">
+      <span class="ic">🏪</span>
+      <span class="t">Ventures</span>
+      <span class="s">Run a fake business</span>
+    </a>
+    <a href="debts.html" class="nav-link">
+      <span class="ic">📋</span>
+      <span class="t">Debts</span>
+      <span class="s">Borrow or repay</span>
+    </a>
+    <a href="history.html" class="nav-link">
+      <span class="ic">🧾</span>
+      <span class="t">History</span>
+      <span class="s">Full transaction log</span>
+    </a>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/utils.js"></script>
+<script>
+(async function init() {
+  const user = await requireAuth();
+  if (!user) return; // requireAuth already redirected to login
+
+  // ── Profile + cash ──────────────────────────────────────────
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('display_name, cash_balance, reputation_score')
+    .eq('id', user.id)
+    .single();
+
+  document.getElementById('displayName').textContent =
+    (profile?.display_name || 'Learner') + '\u2019s Character';
+  document.getElementById('cashValue').textContent = fmtKwacha(profile?.cash_balance);
+
+  const repScore = profile?.reputation_score ?? 50;
+  document.getElementById('repScore').textContent = Math.round(repScore);
+  document.getElementById('repLabel').textContent = reputationLabel(repScore);
+
+  // ── Holdings value ──────────────────────────────────────────
+  const { data: holdings } = await supabase
+    .from('holdings')
+    .select('quantity, instruments(current_price)')
+    .eq('profile_id', user.id);
+
+  const investTotal = (holdings || []).reduce(
+    (sum, h) => sum + (Number(h.quantity) * Number(h.instruments?.current_price || 0)), 0
+  );
+  document.getElementById('investValue').textContent = fmtKwacha(investTotal);
+
+  // ── Ventures value (sum of net venture_events per active venture) ──
+  const { data: ventures } = await supabase
+    .from('ventures')
+    .select('id, starting_capital, status')
+    .eq('profile_id', user.id)
+    .eq('status', 'active');
+
+  let ventureTotal = 0;
+  if (ventures && ventures.length) {
+    const ventureIds = ventures.map(v => v.id);
+    const { data: events } = await supabase
+      .from('venture_events')
+      .select('venture_id, amount')
+      .in('venture_id', ventureIds);
+
+    const startingSum = ventures.reduce((s, v) => s + Number(v.starting_capital), 0);
+    const eventsSum = (events || []).reduce((s, e) => s + Number(e.amount), 0);
+    ventureTotal = startingSum + eventsSum;
+  }
+  document.getElementById('ventureValue').textContent = fmtKwacha(ventureTotal);
+
+  // ── Outstanding debt ────────────────────────────────────────
+  const { data: debts } = await supabase
+    .from('debts')
+    .select('outstanding_balance')
+    .eq('profile_id', user.id)
+    .eq('status', 'active');
+
+  const debtTotal = (debts || []).reduce((s, d) => s + Number(d.outstanding_balance), 0);
+  document.getElementById('debtValue').textContent = '-' + fmtKwacha(debtTotal);
+
+  // ── Net worth ───────────────────────────────────────────────
+  const netWorth = Number(profile?.cash_balance || 0) + investTotal + ventureTotal - debtTotal;
+  document.getElementById('netWorthValue').textContent = fmtKwacha(netWorth);
+
+  // ── Net worth history + change vs. 7 days ago ──────────────
+  const { data: snapshots } = await supabase
+    .from('net_worth_snapshots')
+    .select('snapshot_date, net_worth')
+    .eq('profile_id', user.id)
+    .order('snapshot_date', { ascending: true })
+    .limit(90);
+
+  if (snapshots && snapshots.length >= 2) {
+    const first = Number(snapshots[0].net_worth);
+    const changePct = first !== 0 ? ((netWorth - first) / Math.abs(first)) * 100 : 0;
+    const el = document.getElementById('netWorthChange');
+    el.textContent = fmtPct(changePct) + ' since you started';
+    el.classList.add(changePct >= 0 ? 'up' : 'down');
+    drawChart(snapshots.map(s => Number(s.net_worth)).concat([netWorth]));
+  } else {
+    document.getElementById('netWorthChange').textContent = 'Your history will build up as you play.';
+    drawChart([netWorth]);
+  }
+})();
+
+// Minimal dependency-free line chart — replace with Chart.js later if
+// you want richer interaction (tooltips, zoom). Kept plain here so the
+// repo has zero extra dependencies beyond Supabase.
+function drawChart(values) {
+  const canvas = document.getElementById('nwChart');
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  canvas.width = w * dpr; canvas.height = h * dpr;
+  ctx.scale(dpr, dpr);
+
+  if (values.length < 2) values = [values[0] || 0, values[0] || 0];
+  const min = Math.min(...values), max = Math.max(...values);
+  const range = (max - min) || 1;
+  const pad = 8;
+
+  ctx.beginPath();
+  values.forEach((v, i) => {
+    const x = pad + (i / (values.length - 1)) * (w - pad * 2);
+    const y = h - pad - ((v - min) / range) * (h - pad * 2);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.strokeStyle = '#22C55E';
+  ctx.lineWidth = 2.5;
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+
+  // Soft fill under the line
+  ctx.lineTo(w - pad, h);
+  ctx.lineTo(pad, h);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(34,197,94,0.12)';
+  ctx.fill();
+}
+</script>
+</body>
+</html>

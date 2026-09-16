@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ventures — FinLit Zambia</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --g:#22C55E;--gd:#15803D;--gx:#14532D;--gl:#F0FDF4;--gm:#DCFCE7;
+  --ink:#111827;--ink2:#374151;--ink3:#6B7280;--bg:#F8FAFC;--w:#ffffff;--bd:#E5E7EB;--bd2:#F3F4F6;
+  --red:#DC2626;--redl:#FEF2F2;--ff:'DM Sans',system-ui,sans-serif;--fm:'DM Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--ff);background:var(--bg);color:var(--ink);line-height:1.55;padding-bottom:40px}
+
+.topbar{background:var(--w);border-bottom:1px solid var(--bd);padding:16px 20px;
+  display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:10}
+.back{color:var(--ink3);text-decoration:none;font-size:20px}
+.topbar h1{font-size:16px;font-weight:800;flex:1}
+.new-btn{background:var(--gd);color:#fff;border:none;border-radius:20px;
+  padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+
+.body{padding:16px 20px;max-width:640px;margin:0 auto}
+
+.venture-card{background:var(--w);border:1px solid var(--bd);border-radius:15px;
+  padding:16px 17px;margin-bottom:12px}
+.vc-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.vc-name{font-size:14.5px;font-weight:800}
+.vc-cat{font-size:11px;color:var(--ink3);text-transform:capitalize}
+.vc-value{font-family:var(--fm);font-size:16px;font-weight:800;color:var(--gx)}
+.vc-value.neg{color:var(--red)}
+
+.vc-actions{display:flex;gap:8px;margin-top:10px}
+.vc-btn{flex:1;padding:8px;border-radius:9px;border:1.5px solid var(--bd);
+  background:var(--bg);font-family:inherit;font-weight:700;font-size:12px;cursor:pointer}
+.vc-btn.income{color:var(--gd);border-color:var(--gm)}
+.vc-btn.expense{color:var(--red);border-color:#FCA5A5}
+
+.empty{text-align:center;padding:50px 20px;color:var(--ink3);font-size:13px}
+
+.modal-backdrop{display:none;position:fixed;inset:0;background:rgba(17,24,39,.4);z-index:20}
+.modal-backdrop.show{display:block}
+.modal{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--w);
+  border-radius:20px 20px 0 0;padding:22px 20px 28px;z-index:21;max-width:640px;margin:0 auto}
+.modal.show{display:block}
+.modal h2{font-size:15px;font-weight:800;margin-bottom:16px}
+
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;font-weight:700;color:var(--ink2);margin-bottom:6px}
+.field input,.field select,.field textarea{width:100%;padding:11px 13px;border:1.5px solid var(--bd);
+  border-radius:10px;font-size:14px;font-family:inherit;color:var(--ink);background:var(--bg)}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--g);background:var(--w)}
+
+.btn{width:100%;padding:12px;border-radius:11px;border:none;font-family:inherit;
+  font-size:14px;font-weight:700;cursor:pointer;background:var(--gd);color:#fff;margin-top:4px}
+.btn-secondary{background:none;color:var(--ink3);margin-top:8px}
+
+.msg{font-size:12px;border-radius:8px;padding:9px 12px;margin-bottom:12px;display:none}
+.msg.show{display:block}
+.msg.error{background:var(--redl);color:#7a1010}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="index.html" class="back">←</a>
+  <h1>Ventures</h1>
+  <button class="new-btn" onclick="openNewVenture()">+ New venture</button>
+</div>
+
+<div class="body">
+  <div id="ventureList"></div>
+</div>
+
+<!-- New venture modal -->
+<div class="modal-backdrop" id="newBackdrop" onclick="closeModals()"></div>
+<div class="modal" id="newModal">
+  <h2>Start a new venture</h2>
+  <div class="msg" id="newMsg"></div>
+  <div class="field">
+    <label>Venture name</label>
+    <input type="text" id="ventureName" placeholder="e.g. Chanda's Tuck Shop">
+  </div>
+  <div class="field">
+    <label>Category</label>
+    <select id="ventureCategory">
+      <option value="retail">Retail / trading</option>
+      <option value="services">Services</option>
+      <option value="agriculture">Agriculture</option>
+      <option value="tech">Tech / digital</option>
+      <option value="other">Other</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>Starting capital (from your cash)</label>
+    <input type="number" id="startingCapital" min="1" step="0.01" placeholder="0">
+  </div>
+  <button class="btn" onclick="createVenture()">Launch venture</button>
+  <button class="btn btn-secondary" onclick="closeModals()">Cancel</button>
+</div>
+
+<!-- Log event modal -->
+<div class="modal-backdrop" id="eventBackdrop" onclick="closeModals()"></div>
+<div class="modal" id="eventModal">
+  <h2 id="eventModalTitle">Log an event</h2>
+  <div class="msg" id="eventMsg"></div>
+  <div class="field">
+    <label>Amount</label>
+    <input type="number" id="eventAmount" min="0.01" step="0.01" placeholder="0">
+  </div>
+  <div class="field">
+    <label>What happened?</label>
+    <textarea id="eventDesc" rows="2" placeholder="e.g. Sold stock at the market"></textarea>
+  </div>
+  <button class="btn" id="eventConfirmBtn" onclick="confirmEvent()">Log it</button>
+  <button class="btn btn-secondary" onclick="closeModals()">Cancel</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/utils.js"></script>
+<script>
+let currentUser = null;
+let currentCash = 0;
+let activeVentureId = null;
+let eventKind = 'revenue'; // or 'expense'
+
+(async function init() { await loadAll(); })();
+
+async function loadAll() {
+  currentUser = await requireAuth();
+  if (!currentUser) return;
+
+  const { data: profile } = await supabase
+    .from('profiles').select('cash_balance').eq('id', currentUser.id).single();
+  currentCash = Number(profile?.cash_balance || 0);
+
+  const { data: ventures } = await supabase
+    .from('ventures').select('*').eq('profile_id', currentUser.id).order('created_at', { ascending: false });
+
+  const listEl = document.getElementById('ventureList');
+  if (!ventures || !ventures.length) {
+    listEl.innerHTML = '<div class="empty">No ventures yet. Start one to see how running a business affects your cash flow over time.</div>';
+    return;
+  }
+
+  const cards = await Promise.all(ventures.map(async v => {
+    const { data: events } = await supabase
+      .from('venture_events').select('amount').eq('venture_id', v.id);
+    const net = Number(v.starting_capital) + (events || []).reduce((s, e) => s + Number(e.amount), 0);
+    return `
+      <div class="venture-card">
+        <div class="vc-hdr">
+          <div>
+            <div class="vc-name">${v.name}</div>
+            <div class="vc-cat">${v.category} · ${v.status}</div>
+          </div>
+          <div class="vc-value ${net < 0 ? 'neg' : ''}">${fmtKwacha(net)}</div>
+        </div>
+        ${v.status === 'active' ? `
+        <div class="vc-actions">
+          <button class="vc-btn income" onclick="openEvent(${v.id}, 'revenue')">+ Revenue</button>
+          <button class="vc-btn expense" onclick="openEvent(${v.id}, 'expense')">- Expense</button>
+        </div>` : ''}
+      </div>`;
+  }));
+
+  listEl.innerHTML = cards.join('');
+}
+
+function openNewVenture() {
+  document.getElementById('newBackdrop').classList.add('show');
+  document.getElementById('newModal').classList.add('show');
+}
+
+function openEvent(ventureId, kind) {
+  activeVentureId = ventureId;
+  eventKind = kind;
+  document.getElementById('eventModalTitle').textContent =
+    kind === 'revenue' ? 'Log income' : 'Log an expense';
+  document.getElementById('eventAmount').value = '';
+  document.getElementById('eventDesc').value = '';
+  document.getElementById('eventBackdrop').classList.add('show');
+  document.getElementById('eventModal').classList.add('show');
+}
+
+function closeModals() {
+  ['newBackdrop','newModal','eventBackdrop','eventModal'].forEach(id =>
+    document.getElementById(id).classList.remove('show'));
+}
+
+async function createVenture() {
+  const msgEl = document.getElementById('newMsg');
+  msgEl.className = 'msg';
+  const name = document.getElementById('ventureName').value.trim();
+  const category = document.getElementById('ventureCategory').value;
+  const capital = parseFloat(document.getElementById('startingCapital').value);
+
+  if (!name) { msgEl.textContent = 'Give your venture a name.'; msgEl.className = 'msg show error'; return; }
+  if (!capital || capital <= 0) { msgEl.textContent = 'Enter starting capital greater than zero.'; msgEl.className = 'msg show error'; return; }
+  if (capital > currentCash) { msgEl.textContent = `You only have ${fmtKwacha(currentCash)} in cash.`; msgEl.className = 'msg show error'; return; }
+
+  await supabase.from('ventures').insert({
+    profile_id: currentUser.id, name, category, starting_capital: capital
+  });
+
+  const newCash = currentCash - capital;
+  await supabase.from('cash_ledger').insert({
+    profile_id: currentUser.id, amount: -capital, reason: 'venture_cost'
+  });
+  await supabase.from('profiles').update({ cash_balance: newCash }).eq('id', currentUser.id);
+
+  closeModals();
+  await loadAll();
+}
+
+async function confirmEvent() {
+  const msgEl = document.getElementById('eventMsg');
+  msgEl.className = 'msg';
+  const amount = parseFloat(document.getElementById('eventAmount').value);
+  const desc = document.getElementById('eventDesc').value.trim();
+
+  if (!amount || amount <= 0) { msgEl.textContent = 'Enter an amount greater than zero.'; msgEl.className = 'msg show error'; return; }
+
+  const signedAmount = eventKind === 'revenue' ? amount : -amount;
+
+  await supabase.from('venture_events').insert({
+    venture_id: activeVentureId, kind: eventKind, amount: signedAmount, description: desc || null
+  });
+
+  // Revenue/expense also touches real spendable cash.
+  const newCash = currentCash + signedAmount;
+  await supabase.from('cash_ledger').insert({
+    profile_id: currentUser.id, amount: signedAmount,
+    reason: eventKind === 'revenue' ? 'venture_income' : 'venture_cost',
+    related_table: 'ventures', related_id: activeVentureId
+  });
+  await supabase.from('profiles').update({ cash_balance: newCash }).eq('id', currentUser.id);
+
+  closeModals();
+  await loadAll();
+}
+</script>
+</body>
+</html>

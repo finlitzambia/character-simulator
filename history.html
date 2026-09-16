@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>History — FinLit Zambia</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --g:#22C55E;--gd:#15803D;--gx:#14532D;--gl:#F0FDF4;--gm:#DCFCE7;
+  --ink:#111827;--ink2:#374151;--ink3:#6B7280;--bg:#F8FAFC;--w:#ffffff;--bd:#E5E7EB;--bd2:#F3F4F6;
+  --red:#DC2626;--ff:'DM Sans',system-ui,sans-serif;--fm:'DM Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--ff);background:var(--bg);color:var(--ink);line-height:1.55;padding-bottom:40px}
+
+.topbar{background:var(--w);border-bottom:1px solid var(--bd);padding:16px 20px;
+  display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:10}
+.back{color:var(--ink3);text-decoration:none;font-size:20px}
+.topbar h1{font-size:16px;font-weight:800}
+
+.body{padding:16px 20px;max-width:640px;margin:0 auto}
+
+.filters{display:flex;gap:8px;overflow-x:auto;margin-bottom:16px;padding-bottom:2px}
+.filter-chip{flex-shrink:0;padding:7px 14px;border-radius:20px;border:1.5px solid var(--bd);
+  background:var(--w);font-size:12px;font-weight:700;color:var(--ink2);cursor:pointer;font-family:inherit}
+.filter-chip.active{background:var(--gx);border-color:var(--gx);color:#fff}
+
+.row{background:var(--w);border:1px solid var(--bd);border-radius:12px;
+  padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.row-left{flex:1;min-width:0}
+.row-reason{font-size:13px;font-weight:700;text-transform:capitalize}
+.row-date{font-size:11px;color:var(--ink3);margin-top:1px}
+.row-amt{font-family:var(--fm);font-weight:800;font-size:13.5px;white-space:nowrap}
+.row-amt.pos{color:var(--gd)}
+.row-amt.neg{color:var(--red)}
+
+.empty{text-align:center;padding:50px 20px;color:var(--ink3);font-size:13px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="index.html" class="back">←</a>
+  <h1>Transaction History</h1>
+</div>
+
+<div class="body">
+  <div class="filters" id="filters">
+    <button class="filter-chip active" data-filter="all" onclick="setFilter('all')">All</button>
+    <button class="filter-chip" data-filter="trade_buy,trade_sell" onclick="setFilter('trade_buy,trade_sell')">Trades</button>
+    <button class="filter-chip" data-filter="venture_income,venture_cost" onclick="setFilter('venture_income,venture_cost')">Ventures</button>
+    <button class="filter-chip" data-filter="debt_drawdown,debt_repayment,interest_charge" onclick="setFilter('debt_drawdown,debt_repayment,interest_charge')">Debt</button>
+  </div>
+
+  <div id="rows"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/utils.js"></script>
+<script>
+let currentUser = null;
+let allRows = [];
+
+const REASON_LABELS = {
+  trade_buy: 'Bought instrument', trade_sell: 'Sold instrument',
+  salary: 'Salary', venture_income: 'Venture income', venture_cost: 'Venture cost',
+  debt_drawdown: 'Loan received', debt_repayment: 'Loan repayment',
+  interest_charge: 'Interest charged', manual_adjustment: 'Adjustment'
+};
+
+(async function init() {
+  currentUser = await requireAuth();
+  if (!currentUser) return;
+
+  const { data } = await supabase
+    .from('cash_ledger')
+    .select('*')
+    .eq('profile_id', currentUser.id)
+    .order('created_at', { ascending: false })
+    .limit(200);
+
+  allRows = data || [];
+  render(allRows);
+})();
+
+function setFilter(reasons) {
+  document.querySelectorAll('.filter-chip').forEach(c =>
+    c.classList.toggle('active', c.dataset.filter === reasons));
+
+  if (reasons === 'all') { render(allRows); return; }
+  const set = new Set(reasons.split(','));
+  render(allRows.filter(r => set.has(r.reason)));
+}
+
+function render(rows) {
+  const el = document.getElementById('rows');
+  if (!rows.length) {
+    el.innerHTML = '<div class="empty">No transactions in this category yet.</div>';
+    return;
+  }
+  el.innerHTML = rows.map(r => {
+    const amt = Number(r.amount);
+    return `
+      <div class="row">
+        <div class="row-left">
+          <div class="row-reason">${REASON_LABELS[r.reason] || r.reason}</div>
+          <div class="row-date">${fmtDateTime(r.created_at)}</div>
+        </div>
+        <div class="row-amt ${amt >= 0 ? 'pos' : 'neg'}">${amt >= 0 ? '+' : ''}${fmtKwacha(amt)}</div>
+      </div>`;
+  }).join('');
+}
+</script>
+</body>
+</html>

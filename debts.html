@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Debts — FinLit Zambia</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --g:#22C55E;--gd:#15803D;--gx:#14532D;--gl:#F0FDF4;--gm:#DCFCE7;
+  --ink:#111827;--ink2:#374151;--ink3:#6B7280;--bg:#F8FAFC;--w:#ffffff;--bd:#E5E7EB;--bd2:#F3F4F6;
+  --red:#DC2626;--redl:#FEF2F2;--gold:#FDF8EC;--gol:#C9A83C;
+  --ff:'DM Sans',system-ui,sans-serif;--fm:'DM Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--ff);background:var(--bg);color:var(--ink);line-height:1.55;padding-bottom:40px}
+
+.topbar{background:var(--w);border-bottom:1px solid var(--bd);padding:16px 20px;
+  display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:10}
+.back{color:var(--ink3);text-decoration:none;font-size:20px}
+.topbar h1{font-size:16px;font-weight:800;flex:1}
+.new-btn{background:var(--red);color:#fff;border:none;border-radius:20px;
+  padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+
+.body{padding:16px 20px;max-width:640px;margin:0 auto}
+
+.warn{background:var(--gold);border-left:4px solid var(--gol);color:#7a5500;
+  border-radius:10px;padding:12px 14px;font-size:12.5px;line-height:1.6;margin-bottom:16px}
+
+.debt-card{background:var(--w);border:1px solid var(--bd);border-radius:15px;
+  padding:16px 17px;margin-bottom:12px}
+.dc-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.dc-lender{font-size:14px;font-weight:800;text-transform:capitalize}
+.dc-rate{font-size:11px;color:var(--ink3)}
+.dc-balance{font-family:var(--fm);font-size:16px;font-weight:800;color:var(--red)}
+.dc-repay-btn{width:100%;margin-top:10px;padding:9px;border-radius:9px;border:1.5px solid var(--g);
+  background:var(--gl);color:var(--gx);font-family:inherit;font-weight:700;font-size:12.5px;cursor:pointer}
+
+.empty{text-align:center;padding:50px 20px;color:var(--ink3);font-size:13px}
+
+.modal-backdrop{display:none;position:fixed;inset:0;background:rgba(17,24,39,.4);z-index:20}
+.modal-backdrop.show{display:block}
+.modal{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--w);
+  border-radius:20px 20px 0 0;padding:22px 20px 28px;z-index:21;max-width:640px;margin:0 auto}
+.modal.show{display:block}
+.modal h2{font-size:15px;font-weight:800;margin-bottom:16px}
+
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;font-weight:700;color:var(--ink2);margin-bottom:6px}
+.field input,.field select{width:100%;padding:11px 13px;border:1.5px solid var(--bd);
+  border-radius:10px;font-size:14px;font-family:inherit;color:var(--ink);background:var(--bg)}
+.field input:focus,.field select:focus{outline:none;border-color:var(--g);background:var(--w)}
+.field-note{font-size:11px;color:var(--ink3);margin-top:4px}
+
+.btn{width:100%;padding:12px;border-radius:11px;border:none;font-family:inherit;
+  font-size:14px;font-weight:700;cursor:pointer;background:var(--gd);color:#fff;margin-top:4px}
+.btn-secondary{background:none;color:var(--ink3);margin-top:8px}
+
+.msg{font-size:12px;border-radius:8px;padding:9px 12px;margin-bottom:12px;display:none}
+.msg.show{display:block}
+.msg.error{background:var(--redl);color:#7a1010}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="index.html" class="back">←</a>
+  <h1>Debts</h1>
+  <button class="new-btn" onclick="openNewDebt()">+ Take a loan</button>
+</div>
+
+<div class="body">
+  <div class="warn">Interest accrues on active debts. This is fake money, but the math is real — watch how quickly a balance grows if it's left unpaid.</div>
+  <div id="debtList"></div>
+</div>
+
+<!-- New debt modal -->
+<div class="modal-backdrop" id="newBackdrop" onclick="closeModals()"></div>
+<div class="modal" id="newModal">
+  <h2>Take on a loan</h2>
+  <div class="msg" id="newMsg"></div>
+  <div class="field">
+    <label>Lender type</label>
+    <select id="lenderKind">
+      <option value="bank">Commercial bank (~28% p.a.)</option>
+      <option value="microfinance">Microfinance (~15% per month)</option>
+      <option value="informal">Informal / family (0% p.a.)</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>Amount to borrow</label>
+    <input type="number" id="loanAmount" min="1" step="0.01" placeholder="0">
+    <div class="field-note">This is added to your cash immediately.</div>
+  </div>
+  <button class="btn" onclick="createDebt()">Take the loan</button>
+  <button class="btn btn-secondary" onclick="closeModals()">Cancel</button>
+</div>
+
+<!-- Repay modal -->
+<div class="modal-backdrop" id="repayBackdrop" onclick="closeModals()"></div>
+<div class="modal" id="repayModal">
+  <h2>Repay debt</h2>
+  <div class="msg" id="repayMsg"></div>
+  <div class="field">
+    <label>Amount to repay</label>
+    <input type="number" id="repayAmount" min="0.01" step="0.01" placeholder="0">
+  </div>
+  <button class="btn" onclick="confirmRepay()">Repay</button>
+  <button class="btn btn-secondary" onclick="closeModals()">Cancel</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/utils.js"></script>
+<script>
+let currentUser = null;
+let currentCash = 0;
+let activeDebtId = null;
+let activeDebtBalance = 0;
+
+const LENDER_RATES = { bank: 28.0, microfinance: 180.0, informal: 0.0 }; // annualised for storage
+
+(async function init() { await loadAll(); })();
+
+async function loadAll() {
+  currentUser = await requireAuth();
+  if (!currentUser) return;
+
+  const { data: profile } = await supabase
+    .from('profiles').select('cash_balance').eq('id', currentUser.id).single();
+  currentCash = Number(profile?.cash_balance || 0);
+
+  const { data: debts } = await supabase
+    .from('debts').select('*').eq('profile_id', currentUser.id)
+    .order('created_at', { ascending: false });
+
+  const listEl = document.getElementById('debtList');
+  const active = (debts || []).filter(d => d.status === 'active');
+  const past = (debts || []).filter(d => d.status !== 'active');
+
+  if (!debts || !debts.length) {
+    listEl.innerHTML = '<div class="empty">No debts. Borrowing isn\'t bad by itself — this is where you\'ll see what it costs.</div>';
+    return;
+  }
+
+  listEl.innerHTML = active.map(d => `
+    <div class="debt-card">
+      <div class="dc-hdr">
+        <div>
+          <div class="dc-lender">${d.lender_kind}</div>
+          <div class="dc-rate">${d.annual_interest_rate}% p.a. · borrowed ${fmtKwacha(d.principal)}</div>
+        </div>
+        <div class="dc-balance">${fmtKwacha(d.outstanding_balance)}</div>
+      </div>
+      <button class="dc-repay-btn" onclick="openRepay(${d.id}, ${d.outstanding_balance})">Repay this debt</button>
+    </div>
+  `).join('') + past.map(d => `
+    <div class="debt-card" style="opacity:.6">
+      <div class="dc-hdr">
+        <div>
+          <div class="dc-lender">${d.lender_kind}</div>
+          <div class="dc-rate">${d.status} · borrowed ${fmtKwacha(d.principal)}</div>
+        </div>
+        <div class="dc-balance" style="color:var(--ink3)">${fmtKwacha(0)}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openNewDebt() {
+  document.getElementById('newBackdrop').classList.add('show');
+  document.getElementById('newModal').classList.add('show');
+}
+function openRepay(debtId, balance) {
+  activeDebtId = debtId;
+  activeDebtBalance = Number(balance);
+  document.getElementById('repayAmount').value = '';
+  document.getElementById('repayAmount').max = activeDebtBalance;
+  document.getElementById('repayBackdrop').classList.add('show');
+  document.getElementById('repayModal').classList.add('show');
+}
+function closeModals() {
+  ['newBackdrop','newModal','repayBackdrop','repayModal'].forEach(id =>
+    document.getElementById(id).classList.remove('show'));
+}
+
+async function createDebt() {
+  const msgEl = document.getElementById('newMsg');
+  msgEl.className = 'msg';
+  const lenderKind = document.getElementById('lenderKind').value;
+  const amount = parseFloat(document.getElementById('loanAmount').value);
+
+  if (!amount || amount <= 0) { msgEl.textContent = 'Enter an amount greater than zero.'; msgEl.className = 'msg show error'; return; }
+
+  await supabase.from('debts').insert({
+    profile_id: currentUser.id,
+    lender_kind: lenderKind,
+    principal: amount,
+    outstanding_balance: amount,
+    annual_interest_rate: LENDER_RATES[lenderKind]
+  });
+
+  const newCash = currentCash + amount;
+  await supabase.from('cash_ledger').insert({
+    profile_id: currentUser.id, amount, reason: 'debt_drawdown'
+  });
+  await supabase.from('profiles').update({ cash_balance: newCash }).eq('id', currentUser.id);
+
+  closeModals();
+  await loadAll();
+}
+
+async function confirmRepay() {
+  const msgEl = document.getElementById('repayMsg');
+  msgEl.className = 'msg';
+  const amount = parseFloat(document.getElementById('repayAmount').value);
+
+  if (!amount || amount <= 0) { msgEl.textContent = 'Enter an amount greater than zero.'; msgEl.className = 'msg show error'; return; }
+  if (amount > currentCash) { msgEl.textContent = `You only have ${fmtKwacha(currentCash)} in cash.`; msgEl.className = 'msg show error'; return; }
+
+  const newBalance = Math.max(0, activeDebtBalance - amount);
+  await supabase.from('debts').update({
+    outstanding_balance: newBalance,
+    status: newBalance === 0 ? 'repaid' : 'active'
+  }).eq('id', activeDebtId);
+
+  const newCash = currentCash - amount;
+  await supabase.from('cash_ledger').insert({
+    profile_id: currentUser.id, amount: -amount, reason: 'debt_repayment',
+    related_table: 'debts', related_id: activeDebtId
+  });
+  await supabase.from('profiles').update({ cash_balance: newCash }).eq('id', currentUser.id);
+
+  closeModals();
+  await loadAll();
+}
+</script>
+</body>
+</html>
