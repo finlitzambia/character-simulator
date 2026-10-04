@@ -1,0 +1,23 @@
+name: Run database migrations
+
+# Run this by hand: Actions tab -> "Run database migrations" -> Run workflow.
+# It applies db/01, db/02 and db/03 to your Supabase database. All three
+# files are safe to run again, so re-running after an edit is fine.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Apply SQL files
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+          for f in db/01-adjust-balance-functions.sql db/02-story-engine.sql db/03-story-seed.sql db/04-lockdown-and-character.sql db/05-ambient-events.sql db/06-venture-income.sql db/07-venture-decisions.sql db/08-character-profile.sql db/09-yungsta-questions.sql db/10-yungsta-neglect.sql; do
+            echo "== $f"
+            psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f"
+          done
