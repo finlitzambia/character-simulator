@@ -34,6 +34,7 @@ body{font-family:var(--ff);background:var(--bg);color:var(--ink);line-height:1.5
 .vc-actions{display:flex;gap:8px;margin-top:10px}
 .vc-btn{flex:1;padding:8px;border-radius:9px;border:1.5px solid var(--bd);
   background:var(--bg);font-family:inherit;font-weight:700;font-size:12px;cursor:pointer}
+.vc-pl{display:flex;gap:8px;margin:2px 0 8px}.vc-pl div{flex:1;background:var(--bd2);border-radius:10px;padding:8px 10px;font-size:11px;color:var(--ink3)}.vc-pl b{display:block;font-size:13px;color:var(--ink);font-family:var(--fm)}.vc-pl b.neg{color:var(--red)}.vc-pl b.pos{color:var(--gd)}.vc-note{font-size:11.5px;color:var(--ink3);margin-top:4px}
 .vc-btn.income{color:var(--gd);border-color:var(--gm)}
 .vc-btn.expense{color:var(--red);border-color:#FCA5A5}
 
@@ -100,6 +101,24 @@ body{font-family:var(--ff);background:var(--bg);color:var(--ink);line-height:1.5
   <button class="btn btn-secondary" onclick="closeModals()">Cancel</button>
 </div>
 
+<!-- Pay out / reinvest modal -->
+<div class="modal-backdrop" id="payBackdrop" onclick="closeModals()"></div>
+<div class="modal" id="payModal">
+  <h2 id="payTitle">Manage profit</h2>
+  <div class="msg" id="payMsg"></div>
+  <div class="field-note" id="payInfo"></div>
+  <div class="field"><label>Take home (to your cash)</label><input type="number" id="payWithdraw" min="0" step="0.01" placeholder="0"></div>
+  <div class="field"><label>Reinvest (grow the business)</label><input type="number" id="payReinvest" min="0" step="0.01" placeholder="0"></div>
+  <div class="field"><label>Add more of your own cash</label><input type="number" id="payTopup" min="0" step="0.01" placeholder="0"></div>
+  <div style="display:flex;gap:8px;margin-bottom:10px">
+    <button class="btn btn-secondary" style="margin:0" onclick="payPreset(1,0)">All home</button>
+    <button class="btn btn-secondary" style="margin:0" onclick="payPreset(0.5,0.5)">Split</button>
+    <button class="btn btn-secondary" style="margin:0" onclick="payPreset(0,1)">All reinvest</button>
+  </div>
+  <button class="btn" onclick="confirmPayout()">Confirm</button>
+  <button class="btn btn-secondary" onclick="closeModals()">Cancel</button>
+</div>
+
 <!-- Log event modal -->
 <div class="modal-backdrop" id="eventBackdrop" onclick="closeModals()"></div>
 <div class="modal" id="eventModal">
@@ -111,7 +130,7 @@ body{font-family:var(--ff);background:var(--bg);color:var(--ink);line-height:1.5
   </div>
   <div class="field">
     <label>What happened?</label>
-    <textarea id="eventDesc" rows="2" placeholder="e.g. Sold stock at the market"></textarea>
+    <textarea id="eventDesc" rows="2" placeholder="e.g. Bought a new scale"></textarea>
   </div>
   <button class="btn" id="eventConfirmBtn" onclick="confirmEvent()">Log it</button>
   <button class="btn btn-secondary" onclick="closeModals()">Cancel</button>
@@ -120,17 +139,19 @@ body{font-family:var(--ff);background:var(--bg);color:var(--ink);line-height:1.5
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase-client.js"></script>
 <script src="js/utils.js"></script>
+<script src="js/story-client.js"></script>
 <script>
 let currentUser = null;
 let currentCash = 0;
 let activeVentureId = null;
-let eventKind = 'revenue'; // or 'expense'
+let eventKind = 'expense';
 
 (async function init() { await loadAll(); })();
 
 async function loadAll() {
   currentUser = await requireAuth();
   if (!currentUser) return;
+  if (window.StoryClient) await StoryClient.collect();
 
   const { data: profile } = await supabase
     .from('profiles').select('cash_balance').eq('id', currentUser.id).single();
@@ -147,26 +168,91 @@ async function loadAll() {
 
   const cards = await Promise.all(ventures.map(async v => {
     const { data: events } = await supabase
-      .from('venture_events').select('amount').eq('venture_id', v.id);
-    const net = Number(v.starting_capital) + (events || []).reduce((s, e) => s + Number(e.amount), 0);
+      .from('venture_events').select('kind, amount').eq('venture_id', v.id);
+    const evs = events || [];
+    const cap = Number(v.capital ?? v.starting_capital);
+    const retained = Number(v.retained || 0);
+    const net = cap + retained;
+    const rev = evs.filter(e => e.kind === 'revenue').reduce((s, e) => s + Number(e.amount), 0);
+    const costs = -evs.filter(e => e.kind === 'expense' || e.kind === 'shock').reduce((s, e) => s + Number(e.amount), 0);
+    const profit = rev - costs;
+    const insured = v.insured_until && new Date(v.insured_until) > new Date();
+    window.__v = window.__v || {}; window.__v[v.id] = { name: v.name, retained, cap };
     return `
       <div class="venture-card">
         <div class="vc-hdr">
           <div>
             <div class="vc-name">${v.name}</div>
-            <div class="vc-cat">${v.category} · ${v.status}</div>
+            <div class="vc-cat">${v.category} \u00b7 ${v.status}</div>
           </div>
           <div class="vc-value ${net < 0 ? 'neg' : ''}">${fmtKwacha(net)}</div>
         </div>
+        <div class="vc-pl">
+          <div><span>Sales</span><b>${fmtKwacha(rev)}</b></div>
+          <div><span>Costs &amp; losses</span><b>${fmtKwacha(costs)}</b></div>
+          <div><span>Profit</span><b class="${profit < 0 ? 'neg' : 'pos'}">${fmtKwacha(profit)}</b></div>
+        </div>
+        <div class="vc-pl">
+          <div><span>Working capital</span><b>${fmtKwacha(cap)}</b></div>
+          <div><span>Profit in the business</span><b class="pos">${fmtKwacha(retained)}</b></div>
+        </div>
         ${v.status === 'active' ? `
+        <div class="vc-note">Sales and costs arrive automatically each day. Profit stays in the business until you decide what to do with it.</div>
+        <div class="vc-note">${insured ? '\ud83d\udee1\ufe0f Covered against theft and spoilage until ' + new Date(v.insured_until).toLocaleDateString() : 'Not insured against theft or spoilage.'}</div>
         <div class="vc-actions">
-          <button class="vc-btn income" onclick="openEvent(${v.id}, 'revenue')">+ Revenue</button>
-          <button class="vc-btn expense" onclick="openEvent(${v.id}, 'expense')">- Expense</button>
+          ${insured ? '' : `<button class="vc-btn income" onclick="buyCover(${v.id})">Buy cover</button>`}
+          <button class="vc-btn income" onclick="openPay(${v.id})">Manage profit</button>
+          <button class="vc-btn expense" onclick="openEvent(${v.id}, 'expense')">Record an expense</button>
         </div>` : ''}
       </div>`;
   }));
 
   listEl.innerHTML = cards.join('');
+}
+
+let payVentureId = null;
+function openPay(id) {
+  payVentureId = id; const v = window.__v[id];
+  document.getElementById('payTitle').textContent = v.name;
+  document.getElementById('payInfo').textContent = 'Profit in the business: ' + fmtKwacha(v.retained) + '. Money you take home is yours to spend. Money you reinvest grows the business, with returns that taper off as it gets very large.';
+  ['payWithdraw','payReinvest','payTopup'].forEach(i => document.getElementById(i).value = '');
+  document.getElementById('payMsg').className = 'msg';
+  document.getElementById('payBackdrop').classList.add('show');
+  document.getElementById('payModal').classList.add('show');
+}
+function payPreset(w, r) {
+  const v = window.__v[payVentureId];
+  document.getElementById('payWithdraw').value = w ? (Math.floor(v.retained * w * 100) / 100) : '';
+  document.getElementById('payReinvest').value = r ? (Math.floor(v.retained * r * 100) / 100) : '';
+}
+async function confirmPayout() {
+  const msgEl = document.getElementById('payMsg');
+  const w = parseFloat(document.getElementById('payWithdraw').value) || 0;
+  const r = parseFloat(document.getElementById('payReinvest').value) || 0;
+  const t = parseFloat(document.getElementById('payTopup').value) || 0;
+  const { data: res, error } = await supabase.rpc('sim_venture_payout', {
+    p_venture_id: payVentureId, p_withdraw: w, p_reinvest: r, p_topup: t });
+  if (error || !res || res.error) {
+    const e = res && res.error;
+    msgEl.textContent = e === 'not_enough_profit' ? `There is only ${fmtKwacha(res.retained)} of profit in the business.`
+      : e === 'insufficient_cash' ? `You only have ${fmtKwacha(res.cash)} available.`
+      : e === 'bad_amount' ? 'Enter an amount to take home, reinvest, or add.' : 'Could not do that. Please try again.';
+    msgEl.className = 'msg show error'; return;
+  }
+  closeModals(); await loadAll();
+  if (window.StoryClient) await StoryClient.refresh();
+}
+
+async function buyCover(ventureId) {
+  const { data: res, error } = await supabase.rpc('sim_buy_cover', { p_venture_id: ventureId });
+  if (error || !res || res.error) {
+    const e = res && res.error;
+    alert(e === 'insufficient_cash' ? `Cover costs ${fmtKwacha(res.premium)} and you have ${fmtKwacha(res.cash)} in cash.`
+      : e === 'already_covered' ? 'This venture is already covered.' : 'Could not buy cover. Please try again.');
+    return;
+  }
+  if (window.StoryClient) StoryClient.toast('Covered for one game year. Premium paid: ' + fmtKwacha(res.premium));
+  await loadAll();
 }
 
 function openNewVenture() {
@@ -178,7 +264,7 @@ function openEvent(ventureId, kind) {
   activeVentureId = ventureId;
   eventKind = kind;
   document.getElementById('eventModalTitle').textContent =
-    kind === 'revenue' ? 'Log income' : 'Log an expense';
+    'Record an expense';
   document.getElementById('eventAmount').value = '';
   document.getElementById('eventDesc').value = '';
   document.getElementById('eventBackdrop').classList.add('show');
@@ -186,7 +272,7 @@ function openEvent(ventureId, kind) {
 }
 
 function closeModals() {
-  ['newBackdrop','newModal','eventBackdrop','eventModal'].forEach(id =>
+  ['newBackdrop','newModal','eventBackdrop','eventModal','payBackdrop','payModal'].forEach(id =>
     document.getElementById(id).classList.remove('show'));
 }
 
@@ -201,18 +287,16 @@ async function createVenture() {
   if (!capital || capital <= 0) { msgEl.textContent = 'Enter starting capital greater than zero.'; msgEl.className = 'msg show error'; return; }
   if (capital > currentCash) { msgEl.textContent = `You only have ${fmtKwacha(currentCash)} in cash.`; msgEl.className = 'msg show error'; return; }
 
-  await supabase.from('ventures').insert({
-    profile_id: currentUser.id, name, category, starting_capital: capital
-  });
-
-  const newCash = currentCash - capital;
-  await supabase.from('cash_ledger').insert({
-    profile_id: currentUser.id, amount: -capital, reason: 'venture_cost'
-  });
-  await supabase.from('profiles').update({ cash_balance: newCash }).eq('id', currentUser.id);
+  const { data: res, error } = await supabase.rpc('sim_create_venture', { p_name: name, p_category: category, p_capital: capital });
+  if (error || !res || res.error) {
+    msgEl.textContent = res && res.error === 'insufficient_cash' ? `You only have ${fmtKwacha(res.cash)} in cash.` : 'Could not start the venture. Please try again.';
+    msgEl.className = 'msg show error';
+    return;
+  }
 
   closeModals();
   await loadAll();
+  if (window.StoryClient) await StoryClient.refresh();
 }
 
 async function confirmEvent() {
@@ -223,23 +307,22 @@ async function confirmEvent() {
 
   if (!amount || amount <= 0) { msgEl.textContent = 'Enter an amount greater than zero.'; msgEl.className = 'msg show error'; return; }
 
-  const signedAmount = eventKind === 'revenue' ? amount : -amount;
+  const signedAmount = -amount;
 
-  await supabase.from('venture_events').insert({
-    venture_id: activeVentureId, kind: eventKind, amount: signedAmount, description: desc || null
+  const { data: res, error } = await supabase.rpc('sim_log_venture_event', {
+    p_venture_id: activeVentureId, p_kind: eventKind, p_amount: amount, p_desc: desc || null
   });
-
-  // Revenue/expense also touches real spendable cash.
-  const newCash = currentCash + signedAmount;
-  await supabase.from('cash_ledger').insert({
-    profile_id: currentUser.id, amount: signedAmount,
-    reason: eventKind === 'revenue' ? 'venture_income' : 'venture_cost',
-    related_table: 'ventures', related_id: activeVentureId
-  });
-  await supabase.from('profiles').update({ cash_balance: newCash }).eq('id', currentUser.id);
+  if (error || !res || res.error) {
+    const e = res && res.error;
+    msgEl.textContent = e === 'insufficient_cash' ? `You only have ${fmtKwacha(res.cash)} in cash.`
+      : 'Could not save that entry. Please try again.';
+    msgEl.className = 'msg show error';
+    return;
+  }
 
   closeModals();
   await loadAll();
+  if (window.StoryClient) await StoryClient.refresh();
 }
 </script>
 </body>

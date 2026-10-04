@@ -77,8 +77,8 @@ body{font-family:var(--ff);background:var(--bg);color:var(--ink);min-height:100v
 
     <form id="authForm">
       <div class="field" id="nameField" style="display:none">
-        <label for="displayName">What should we call your character?</label>
-        <input type="text" id="displayName" placeholder="e.g. Mwansa" autocomplete="name">
+        <label for="displayName">What is your name?</label>
+        <input type="text" id="displayName" placeholder="e.g. Chanda" autocomplete="name">
       </div>
 
       <div class="field">
@@ -127,7 +127,7 @@ function switchTab(next) {
   document.getElementById('tabLogin').classList.toggle('active', next === 'login');
   document.getElementById('tabSignup').classList.toggle('active', next === 'signup');
   document.getElementById('nameField').style.display = next === 'signup' ? 'block' : 'none';
-  document.getElementById('submitBtn').textContent = next === 'signup' ? 'Create my character' : 'Log in';
+  document.getElementById('submitBtn').textContent = next === 'signup' ? 'Create my account' : 'Log in';
   hideMsg();
 }
 
@@ -164,17 +164,11 @@ document.getElementById('authForm').addEventListener('submit', async (e) => {
     if (mode === 'signup') {
       const displayName = document.getElementById('displayName').value.trim() || 'Learner';
 
-      const { data, error } = await supabase.auth.signUp({ email, password });
+      const { data, error } = await supabase.auth.signUp({
+        email, password, options: { data: { display_name: displayName } }
+      });
       if (error) throw error;
-
-      // Create the matching profile row (cash_balance defaults to 10000
-      // per schema.sql, reputation_score defaults to 50).
-      if (data.user) {
-        await supabase.from('profiles').insert({
-          id: data.user.id,
-          display_name: displayName
-        });
-      }
+      // The profile row (and its 10,000 starting cash) is created by the database itself.
 
       showMsg('Account created! Log in below to get started.', 'info');
       switchTab('login');
@@ -192,7 +186,7 @@ document.getElementById('authForm').addEventListener('submit', async (e) => {
         );
       }
 
-      window.location.href = 'index.html';
+      window.location.href = 'index.html' + window.location.search;
     }
   } catch (err) {
     showMsg(err.message || 'Something went wrong. Try again.', 'error');
@@ -206,7 +200,7 @@ document.getElementById('authForm').addEventListener('submit', async (e) => {
 (async function checkExistingSession() {
   const { data: { session } } = await supabase.auth.getSession();
   if (session) {
-    window.location.href = 'index.html';
+    window.location.href = 'index.html' + window.location.search;
   }
 })();
 </script>

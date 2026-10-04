@@ -61,7 +61,7 @@ body{font-family:var(--ff);background:var(--bg);color:var(--ink);line-height:1.5
 .msg.error{background:var(--redl);color:#7a1010}
 </style>
 </head>
-<body>
+<body data-guard="debts">
 
 <div class="topbar">
   <a href="index.html" class="back">←</a>
@@ -81,7 +81,7 @@ body{font-family:var(--ff);background:var(--bg);color:var(--ink);line-height:1.5
   <div class="msg" id="newMsg"></div>
   <div class="field">
     <label>Lender type</label>
-    <select id="lenderKind">
+    <select id="lenderKind" onchange="showLimit()">
       <option value="bank">Commercial bank (~28% p.a.)</option>
       <option value="microfinance">Microfinance (~15% per month)</option>
       <option value="informal">Informal / family (0% p.a.)</option>
@@ -90,7 +90,7 @@ body{font-family:var(--ff);background:var(--bg);color:var(--ink);line-height:1.5
   <div class="field">
     <label>Amount to borrow</label>
     <input type="number" id="loanAmount" min="1" step="0.01" placeholder="0">
-    <div class="field-note">This is added to your cash immediately.</div>
+    <div class="field-note" id="limitNote">This is added to your cash immediately.</div>
   </div>
   <button class="btn" onclick="createDebt()">Take the loan</button>
   <button class="btn btn-secondary" onclick="closeModals()">Cancel</button>
@@ -112,6 +112,7 @@ body{font-family:var(--ff);background:var(--bg);color:var(--ink);line-height:1.5
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase-client.js"></script>
 <script src="js/utils.js"></script>
+<script src="js/story-client.js"></script>
 <script>
 let currentUser = null;
 let currentCash = 0;
@@ -167,7 +168,18 @@ async function loadAll() {
   `).join('');
 }
 
+let LIMITS = {};
+async function showLimit() {
+  const kind = document.getElementById('lenderKind').value;
+  if (!LIMITS || LIMITS[kind] === undefined) {
+    const { data } = await supabase.rpc('story_borrow_limits'); LIMITS = data || {};
+  }
+  document.getElementById('limitNote').textContent = LIMITS[kind] !== undefined
+    ? `You can borrow up to ${fmtKwacha(LIMITS[kind])} from this lender right now. Added to your cash immediately.`
+    : 'This is added to your cash immediately.';
+}
 function openNewDebt() {
+  LIMITS = {}; showLimit();
   document.getElementById('newBackdrop').classList.add('show');
   document.getElementById('newModal').classList.add('show');
 }
@@ -192,20 +204,14 @@ async function createDebt() {
 
   if (!amount || amount <= 0) { msgEl.textContent = 'Enter an amount greater than zero.'; msgEl.className = 'msg show error'; return; }
 
-  await supabase.from('debts').insert({
-    profile_id: currentUser.id,
-    lender_kind: lenderKind,
-    principal: amount,
-    outstanding_balance: amount,
-    annual_interest_rate: LENDER_RATES[lenderKind]
-  });
-
-  const newCash = currentCash + amount;
-  await supabase.from('cash_ledger').insert({
-    profile_id: currentUser.id, amount, reason: 'debt_drawdown'
-  });
-  await supabase.from('profiles').update({ cash_balance: newCash }).eq('id', currentUser.id);
-
+  const { data: res, error } = await supabase.rpc('story_borrow', { p_kind: lenderKind, p_amount: amount });
+  if (error || !res || res.error) {
+    const e = res && res.error;
+    msgEl.textContent = e === 'over_limit' ? `This lender will only lend you ${fmtKwacha(res.limit)} right now.`
+      : e === 'locked' ? 'Debts is not unlocked yet.' : 'Could not take the loan. Please try again.';
+    msgEl.className = 'msg show error';
+    return;
+  }
   closeModals();
   await loadAll();
 }
@@ -218,18 +224,12 @@ async function confirmRepay() {
   if (!amount || amount <= 0) { msgEl.textContent = 'Enter an amount greater than zero.'; msgEl.className = 'msg show error'; return; }
   if (amount > currentCash) { msgEl.textContent = `You only have ${fmtKwacha(currentCash)} in cash.`; msgEl.className = 'msg show error'; return; }
 
-  const newBalance = Math.max(0, activeDebtBalance - amount);
-  await supabase.from('debts').update({
-    outstanding_balance: newBalance,
-    status: newBalance === 0 ? 'repaid' : 'active'
-  }).eq('id', activeDebtId);
-
-  const newCash = currentCash - amount;
-  await supabase.from('cash_ledger').insert({
-    profile_id: currentUser.id, amount: -amount, reason: 'debt_repayment',
-    related_table: 'debts', related_id: activeDebtId
-  });
-  await supabase.from('profiles').update({ cash_balance: newCash }).eq('id', currentUser.id);
+  const { data: res, error } = await supabase.rpc('sim_repay', { p_debt_id: activeDebtId, p_amount: amount });
+  if (error || !res || res.error) {
+    msgEl.textContent = res && res.error === 'insufficient_cash' ? `You only have ${fmtKwacha(res.cash)} in cash.` : 'Could not record the repayment. Please try again.';
+    msgEl.className = 'msg show error';
+    return;
+  }
 
   closeModals();
   await loadAll();

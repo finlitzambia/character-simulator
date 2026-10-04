@@ -72,8 +72,9 @@ body{font-family:var(--ff);background:var(--bg);color:var(--ink);line-height:1.5
 <div class="hero">
   <div class="hero-top">
     <div>
-      <div class="kicker">Financial Character</div>
+      <div class="kicker">Your yungsta</div>
       <h1 id="displayName">Loading…</h1>
+      <div id="mentorLine" style="font-size:12px;color:rgba(255,255,255,.7);margin-top:2px"></div>
     </div>
     <button class="logout-btn" onclick="logOut()">Log out</button>
   </div>
@@ -120,7 +121,7 @@ body{font-family:var(--ff);background:var(--bg);color:var(--ink);line-height:1.5
   </div>
 
   <div class="nav-links">
-    <a href="trade.html" class="nav-link">
+    <a href="trade.html" class="nav-link" data-feature="trade">
       <span class="ic">📊</span>
       <span class="t">Trade</span>
       <span class="s">Buy or sell instruments</span>
@@ -130,10 +131,15 @@ body{font-family:var(--ff);background:var(--bg);color:var(--ink);line-height:1.5
       <span class="t">Ventures</span>
       <span class="s">Run a fake business</span>
     </a>
-    <a href="debts.html" class="nav-link">
+    <a href="debts.html" class="nav-link" data-feature="debts">
       <span class="ic">📋</span>
       <span class="t">Debts</span>
       <span class="s">Borrow or repay</span>
+    </a>
+    <a href="profile.html" class="nav-link">
+      <span class="ic">🧭</span>
+      <span class="t">My yungsta</span>
+      <span class="s">Who they are becoming</span>
     </a>
     <a href="history.html" class="nav-link">
       <span class="ic">🧾</span>
@@ -147,20 +153,25 @@ body{font-family:var(--ff);background:var(--bg);color:var(--ink);line-height:1.5
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase-client.js"></script>
 <script src="js/utils.js"></script>
+<script src="js/story-client.js"></script>
 <script>
 (async function init() {
   const user = await requireAuth();
   if (!user) return; // requireAuth already redirected to login
+  if (window.StoryClient) await StoryClient.collect();
 
   // ── Profile + cash ──────────────────────────────────────────
   const { data: profile } = await supabase
     .from('profiles')
-    .select('display_name, cash_balance, reputation_score')
+    .select('display_name, character_name, relationship, avatar, backstory, cash_balance, reputation_score')
     .eq('id', user.id)
     .single();
 
+  if (profile && (!profile.backstory || !profile.relationship || !profile.character_name)) { window.location.replace('character.html' + window.location.search); return; }
   document.getElementById('displayName').textContent =
-    (profile?.display_name || 'Learner') + '\u2019s Character';
+    (profile?.avatar || '') + ' ' + (profile?.character_name || 'Your yungsta');
+  const mentorLine = document.getElementById('mentorLine');
+  if (mentorLine) mentorLine.textContent = 'Guided by ' + (profile?.display_name || 'you');
   document.getElementById('cashValue').textContent = fmtKwacha(profile?.cash_balance);
 
   const repScore = profile?.reputation_score ?? 50;
@@ -178,25 +189,17 @@ body{font-family:var(--ff);background:var(--bg);color:var(--ink);line-height:1.5
   );
   document.getElementById('investValue').textContent = fmtKwacha(investTotal);
 
-  // ── Ventures value (sum of net venture_events per active venture) ──
+  // Ventures value: working capital plus profit kept inside the business
   const { data: ventures } = await supabase
     .from('ventures')
-    .select('id, starting_capital, status')
+    .select('capital, starting_capital, retained')
     .eq('profile_id', user.id)
     .eq('status', 'active');
 
   let ventureTotal = 0;
-  if (ventures && ventures.length) {
-    const ventureIds = ventures.map(v => v.id);
-    const { data: events } = await supabase
-      .from('venture_events')
-      .select('venture_id, amount')
-      .in('venture_id', ventureIds);
-
-    const startingSum = ventures.reduce((s, v) => s + Number(v.starting_capital), 0);
-    const eventsSum = (events || []).reduce((s, e) => s + Number(e.amount), 0);
-    ventureTotal = startingSum + eventsSum;
-  }
+  (ventures || []).forEach(v => {
+    ventureTotal += Number(v.capital ?? v.starting_capital) + Number(v.retained || 0);
+  });
   document.getElementById('ventureValue').textContent = fmtKwacha(ventureTotal);
 
   // ── Outstanding debt ────────────────────────────────────────

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Who are you guiding? -- FinLit Zambia</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --g:#22C55E;--gd:#15803D;--gx:#14532D;--gl:#F0FDF4;--gm:#DCFCE7;
+  --gol:#C9A83C;--ink:#111827;--ink2:#374151;--ink3:#6B7280;
+  --bg:#F8FAFC;--w:#ffffff;--bd:#E5E7EB;--bd2:#F3F4F6;
+  --red:#DC2626;--redl:#FEF2F2;
+  --ff:'DM Sans',system-ui,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--ff);background:var(--bg);color:var(--ink);min-height:100vh;padding:20px 16px 40px;line-height:1.55}
+.wrap{max-width:440px;margin:0 auto}
+.hdr{background:linear-gradient(140deg,var(--gx) 0%,#0a2617 100%);color:#fff;border-radius:20px;padding:26px 24px;margin-bottom:18px}
+.kicker{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gol);margin-bottom:6px}
+.hdr h1{font-size:22px;font-weight:800;letter-spacing:-.3px;margin-bottom:6px}
+.hdr p{font-size:13px;color:rgba(255,255,255,.72)}
+.card{background:var(--w);border:1px solid var(--bd);border-radius:18px;padding:20px;margin-bottom:14px}
+.card h2{font-size:13px;font-weight:800;color:var(--ink2);margin-bottom:12px;letter-spacing:.02em}
+.preview{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.preview .av{width:64px;height:64px;border-radius:50%;background:var(--gm);display:flex;align-items:center;justify-content:center;font-size:34px;flex:none}
+.preview .nm{font-size:18px;font-weight:800}
+.preview .bs{font-size:12px;color:var(--ink3)}
+input[type=text]{width:100%;padding:13px 14px;border:1.5px solid var(--bd);border-radius:12px;font-size:16px;font-family:inherit;background:var(--bg)}
+input[type=text]:focus{outline:none;border-color:var(--g);background:#fff}
+.avs{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.avs button{aspect-ratio:1;border-radius:14px;border:2px solid var(--bd);background:#fff;font-size:26px;cursor:pointer}
+.avs button.on{border-color:var(--g);background:var(--gl)}
+.bgs{display:grid;gap:10px}
+.bgs button{text-align:left;border:2px solid var(--bd);background:#fff;border-radius:14px;padding:13px 14px;font-family:inherit;cursor:pointer;color:var(--ink)}
+.bgs button.on{border-color:var(--g);background:var(--gl)}
+.bgs b{display:block;font-size:14.5px}
+.bgs span{font-size:12.5px;color:var(--ink3)}
+.btn{width:100%;padding:15px;border:0;border-radius:14px;background:var(--gd);color:#fff;font-family:inherit;font-weight:800;font-size:16px;cursor:pointer;box-shadow:0 4px 0 var(--gx)}
+.btn:disabled{background:var(--bd);color:var(--ink3);box-shadow:none;cursor:not-allowed}
+.msg{display:none;background:var(--redl);color:#7a1010;border-radius:10px;padding:10px 12px;font-size:13px;margin-bottom:12px}
+.msg.show{display:block}
+.note{font-size:12px;color:var(--ink3);text-align:center;margin-top:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <div class="kicker">Your yungsta</div>
+    <h1>Who are you guiding?</h1>
+    <p>You will help someone you care about make real money decisions. Teaching what you learn is one of the best ways to remember it.</p>
+  </div>
+
+  <div class="card">
+    <div class="preview"><div class="av" id="pvAv">🙂</div><div><div class="nm" id="pvName">Your name</div><div class="bs" id="pvBs">Pick a starting story</div></div></div>
+    <h2>THEIR NAME</h2>
+    <input type="text" id="nameIn" maxlength="24" placeholder="e.g. Mwila" autocomplete="off">
+  </div>
+
+  <div class="card"><h2>THEIR LOOK</h2><div class="avs" id="avs"></div></div>
+
+  <div class="card"><h2>WHO ARE THEY TO YOU?</h2>
+    <div class="bgs" id="rels">
+      <button type="button" data-v="younger_brother"><b>My younger brother</b></button>
+      <button type="button" data-v="younger_sister"><b>My younger sister</b></button>
+      <button type="button" data-v="son"><b>My son</b></button>
+      <button type="button" data-v="daughter"><b>My daughter</b></button>
+      <button type="button" data-v="apprentice"><b>Someone I am mentoring</b></button>
+    </div>
+  </div>
+
+  <div class="card"><h2>WHERE DO THEY START?</h2>
+    <div class="bgs" id="bgs">
+      <button type="button" data-v="student"><b>🎓 A student</b><span>Small income, big plans, and a lot to learn.</span></button>
+      <button type="button" data-v="trader"><b>🛒 A market trader</b><span>Cash comes and goes with the day's sales.</span></button>
+      <button type="button" data-v="salaried"><b>💼 A salaried worker</b><span>A steady payday, and lots of people asking for a share.</span></button>
+      <button type="button" data-v="farmer"><b>🌽 A smallholder farmer</b><span>Income follows the seasons. Planning is everything.</span></button>
+    </div>
+  </div>
+
+  <div class="msg" id="msg"></div>
+  <button class="btn" id="go" disabled>Start guiding</button>
+  <div class="note">They are a young adult starting out (about 18 to 25), with K10,000 to their name. Their starting story shapes the situations they meet, not their cash.</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/utils.js"></script>
+<script>
+const AVATARS = ['🧒🏾','👦🏾','👧🏾','🧑🏾','👩🏾','👨🏾','🧕🏾','👷🏾','👩🏾‍🌾','👨🏾‍🌾','🧑🏾‍💻','🧑🏾‍🔧'];
+const BS_LABEL = { student:'A student', trader:'A market trader', salaried:'A salaried worker', farmer:'A smallholder farmer' };
+const REL_LABEL = { younger_brother:'Your younger brother', younger_sister:'Your younger sister', son:'Your son', daughter:'Your daughter', apprentice:'Someone you mentor' };
+let avatar = AVATARS[0], backstory = null, relationship = null, existing = false;
+
+function refresh() {
+  const name = document.getElementById('nameIn').value.trim();
+  document.getElementById('pvAv').textContent = avatar;
+  document.getElementById('pvName').textContent = name || 'Your name';
+  document.getElementById('pvBs').textContent = (relationship ? REL_LABEL[relationship] : 'Who are they to you?') + (backstory ? ' \u00b7 ' + BS_LABEL[backstory] : '');
+  document.getElementById('go').disabled = !(name.length >= 2 && backstory && relationship);
+}
+
+(async function init() {
+  const user = await requireAuth();
+  if (!user) return;
+
+  const avs = document.getElementById('avs');
+  AVATARS.forEach(a => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.textContent = a;
+    b.onclick = () => { avatar = a; [...avs.children].forEach(x => x.classList.toggle('on', x === b)); refresh(); };
+    avs.appendChild(b);
+  });
+  avs.children[0].classList.add('on');
+
+  document.querySelectorAll('#bgs button').forEach(b => {
+    b.onclick = () => {
+      backstory = b.getAttribute('data-v');
+      document.querySelectorAll('#bgs button').forEach(x => x.classList.toggle('on', x === b));
+      refresh();
+    };
+  });
+  document.querySelectorAll('#rels button').forEach(b => {
+    b.onclick = () => {
+      relationship = b.getAttribute('data-v');
+      document.querySelectorAll('#rels button').forEach(x => x.classList.toggle('on', x === b));
+      refresh();
+    };
+  });
+  document.getElementById('nameIn').addEventListener('input', refresh);
+
+  const { data: p } = await supabase.from('profiles').select('display_name, character_name, relationship, avatar, backstory').eq('id', user.id).single();
+  if (p) {
+    if (p.character_name) document.getElementById('nameIn').value = p.character_name;
+    if (p.avatar && AVATARS.includes(p.avatar)) {
+      avatar = p.avatar;
+      [...avs.children].forEach(x => x.classList.toggle('on', x.textContent === avatar));
+    }
+    if (p.relationship) {
+      relationship = p.relationship;
+      document.querySelectorAll('#rels button').forEach(x => x.classList.toggle('on', x.getAttribute('data-v') === relationship));
+    }
+    if (p.backstory) {
+      existing = true; backstory = p.backstory;
+      document.querySelectorAll('#bgs button').forEach(x => x.classList.toggle('on', x.getAttribute('data-v') === backstory));
+      document.getElementById('go').textContent = 'Save changes';
+    }
+  }
+  refresh();
+
+  document.getElementById('go').addEventListener('click', async () => {
+    const msg = document.getElementById('msg'); msg.className = 'msg';
+    const btn = document.getElementById('go'); btn.disabled = true;
+    const { data, error } = await supabase.rpc('set_character', {
+      p_name: document.getElementById('nameIn').value, p_avatar: avatar, p_backstory: backstory, p_relationship: relationship
+    });
+    if (error || !data || data.error) {
+      msg.textContent = data && data.error === 'bad_name' ? 'Names must be 2 to 24 characters.' : 'Something went wrong. Please try again.';
+      msg.className = 'msg show'; btn.disabled = false; return;
+    }
+    window.location.href = 'index.html' + window.location.search;
+  });
+})();
+</script>
+</body>
+</html>

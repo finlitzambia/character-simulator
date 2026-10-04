@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>My yungsta -- FinLit Zambia</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --g:#22C55E;--gd:#15803D;--gx:#14532D;--gl:#F0FDF4;--gm:#DCFCE7;
+  --gol:#C9A83C;--ink:#111827;--ink2:#374151;--ink3:#6B7280;
+  --bg:#F8FAFC;--w:#ffffff;--bd:#E5E7EB;--bd2:#F3F4F6;--red:#DC2626;--redl:#FEF2F2;
+  --ff:'DM Sans',system-ui,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--ff);background:var(--bg);color:var(--ink);padding:16px 16px 48px;line-height:1.55}
+.wrap{max-width:480px;margin:0 auto}
+.top{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.back{font-size:22px;text-decoration:none;color:var(--ink)}
+.top h1{font-size:17px;font-weight:800}
+.hero{background:linear-gradient(140deg,var(--gx) 0%,#0a2617 100%);color:#fff;border-radius:22px;padding:24px 22px;text-align:center;margin-bottom:14px}
+.hero .av{width:84px;height:84px;margin:0 auto 10px;border-radius:50%;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;font-size:46px}
+.hero .nm{font-size:20px;font-weight:800}
+.hero .bs{font-size:12px;color:rgba(255,255,255,.7);margin-bottom:14px}
+.hero .arch{display:inline-block;background:var(--gol);color:#2b2205;font-weight:800;font-size:14px;padding:6px 14px;border-radius:99px;margin-bottom:10px}
+.hero .blurb{font-size:13.5px;color:rgba(255,255,255,.85);max-width:340px;margin:0 auto}
+.hero a.edit{display:inline-block;margin-top:14px;font-size:12px;color:rgba(255,255,255,.7)}
+.card{background:var(--w);border:1px solid var(--bd);border-radius:18px;padding:18px;margin-bottom:14px}
+.card h2{font-size:12px;font-weight:800;letter-spacing:.08em;color:var(--ink3);margin-bottom:14px}
+.tr{margin-bottom:14px}
+.tr-h{display:flex;justify-content:space-between;font-size:13.5px;font-weight:700;margin-bottom:5px}
+.tr-h span:last-child{font-variant-numeric:tabular-nums;color:var(--ink2)}
+.bar{height:11px;border-radius:99px;background:var(--bd2);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:99px;background:var(--g);transition:width .8s}
+.tr-d{font-size:11.5px;color:var(--ink3);margin-top:3px}
+.stat-row{display:flex;gap:10px}
+.stat{flex:1;background:var(--bd2);border-radius:14px;padding:12px;text-align:center}
+.stat b{display:block;font-size:20px}
+.stat span{font-size:11.5px;color:var(--ink3)}
+.ev{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--bd2);font-size:13px}
+.ev:first-of-type{border-top:0}
+.ev .pts{flex:none;min-width:38px;text-align:center;font-weight:800;font-size:12px;border-radius:8px;padding:3px 6px}
+.ev .pts.up{background:var(--gm);color:var(--gx)} .ev .pts.down{background:var(--redl);color:#7a1010}
+.mo{padding:10px 0;border-top:1px solid var(--bd2)}
+.mo:first-of-type{border-top:0}
+.mo b{display:block;font-size:13.5px}
+.mo span{font-size:12.5px;color:var(--ink3)}
+.mo em{font-style:normal;font-size:11.5px;font-weight:700;margin-left:6px}
+.tip{background:var(--gl);border:1.5px solid var(--gm);border-radius:14px;padding:14px;font-size:13.5px}
+.tip b{display:block;color:var(--gd);margin-bottom:4px}
+.empty{font-size:13px;color:var(--ink3)}
+.btn{display:block;width:100%;text-align:center;text-decoration:none;padding:14px;border-radius:14px;background:var(--gd);color:#fff;font-weight:800;box-shadow:0 4px 0 var(--gx);margin-top:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><a class="back" href="index.html">&larr;</a><h1>My yungsta</h1></div>
+
+  <div class="hero">
+    <div class="av" id="av">🙂</div>
+    <div class="nm" id="nm">&nbsp;</div>
+    <div class="bs" id="bs">&nbsp;</div>
+    <div class="arch" id="arch">&hellip;</div>
+    <div class="blurb" id="blurb"></div>
+    <a class="edit" href="character.html">Edit their name &amp; look</a>
+  </div>
+
+  <div class="card">
+    <h2>WHO THEY ARE BECOMING</h2>
+    <div id="traits"></div>
+  </div>
+
+  <div class="card">
+    <h2>THE NUMBERS</h2>
+    <div class="stat-row">
+      <div class="stat"><b id="sDec">0</b><span>pieces of advice given</span></div>
+      <div class="stat"><b id="sKnow">0/0</b><span>lessons you have learned</span></div>
+      <div class="stat"><b id="sTaught">0</b><span>times you coached</span></div>
+    </div>
+    <div class="stat-row" style="margin-top:10px">
+      <div class="stat"><b id="sQA">0</b><span>questions answered</span></div>
+      <div class="stat"><b id="sQC">-</b><span>answered correctly</span></div>
+    </div>
+  </div>
+
+  <div class="card" id="whyCard" style="display:none">
+    <h2>WHAT SHAPED THEM</h2>
+    <div id="why"></div>
+  </div>
+
+  <div class="card">
+    <h2>KEY MOMENTS</h2>
+    <div id="moments"></div>
+  </div>
+
+  <div class="card" id="journalCard" style="display:none">
+    <h2>ADVICE YOU PASSED ON</h2>
+    <div id="journal"></div>
+    <div class="empty" style="margin-top:8px">Notes stay on this phone only.</div>
+  </div>
+
+  <div class="card">
+    <h2>HOW TO COACH THEM NEXT</h2>
+    <div class="tip" id="tip"></div>
+    <a class="btn" href="index.html">Keep playing</a>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/utils.js"></script>
+<script>
+const TRAITS = {
+  prudence:   ['Prudence',   'Looks before leaping; resists pressure and scams'],
+  discipline: ['Discipline', 'Repays debts, keeps a buffer, plans ahead'],
+  generosity: ['Generosity', 'Helps others, ideally in a sustainable way'],
+  boldness:   ['Boldness',   'Takes sensible risks to grow']
+};
+const BS = { student:'A student', trader:'A market trader', salaried:'A salaried worker', farmer:'A smallholder farmer' };
+const REL = { younger_brother:'Your younger brother', younger_sister:'Your younger sister', son:'Your son', daughter:'Your daughter', apprentice:'Someone you mentor' };
+function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function signed(n) { n = Number(n || 0); return (n > 0 ? '+' : '') + fmtKwacha(n); }
+
+(async function init() {
+  const user = await requireAuth();
+  if (!user) return;
+  const { data, error } = await supabase.rpc('sim_character_summary');
+  if (error || !data || data.error) {
+    document.getElementById('arch').textContent = 'Could not load';
+    return;
+  }
+  document.getElementById('av').textContent = data.avatar || '🙂';
+  document.getElementById('nm').textContent = data.name || 'Learner';
+  document.getElementById('bs').textContent = [REL[data.relationship], BS[data.backstory]].filter(Boolean).join(' \u00b7 ');
+  document.getElementById('arch').textContent = data.archetype.title;
+  document.getElementById('blurb').textContent = data.archetype.blurb;
+
+  document.getElementById('traits').innerHTML = Object.keys(TRAITS).map(k => {
+    const v = Number(data.traits[k]);
+    return `<div class="tr"><div class="tr-h"><span>${TRAITS[k][0]}</span><span>${v}</span></div>
+      <div class="bar"><i style="width:${v}%"></i></div><div class="tr-d">${TRAITS[k][1]}</div></div>`;
+  }).join('');
+
+  document.getElementById('sDec').textContent = data.decisions;
+  document.getElementById('sKnow').textContent = data.knowledge.done + '/' + data.knowledge.total;
+  document.getElementById('sTaught').textContent = data.taught || 0;
+  const qa = (data.questions || {}).answered || 0, qc = (data.questions || {}).correct || 0;
+  document.getElementById('sQA').textContent = qa;
+  document.getElementById('sQC').textContent = qa ? Math.round(qc * 100 / qa) + '%' : '-';
+
+  if (data.highlights && data.highlights.length) {
+    document.getElementById('whyCard').style.display = 'block';
+    document.getElementById('why').innerHTML = data.highlights.map(h =>
+      `<div class="ev"><span class="pts ${h.points >= 0 ? 'up' : 'down'}">${h.points > 0 ? '+' : ''}${h.points}</span>
+       <div><b>${esc((TRAITS[h.trait] || [h.trait])[0])}</b><br>${esc(h.note)}</div></div>`).join('');
+  }
+
+  const mo = data.moments || [];
+  document.getElementById('moments').innerHTML = mo.length ? mo.map(m =>
+    `<div class="mo"><b>${esc(m.event)}</b><span>You advised: ${esc(m.choice || 'Continue')}${m.taught ? ' \u00b7 explained \u2713' : ''}</span>${
+      Number(m.cash) ? `<em style="color:${m.cash > 0 ? 'var(--gd)' : 'var(--red)'}">${signed(m.cash)}</em>` : ''}</div>`).join('')
+    : '<div class="empty">No advice given yet. Finish a lesson or start a venture, and ' + esc(data.name) + ' will come to you.</div>';
+
+  document.getElementById('tip').innerHTML = data.growth_tip
+    ? `<b>Strengthen their ${esc((TRAITS[data.growth_trait] || [''])[0]).toLowerCase()}</b>${esc(data.growth_tip)}`
+    : 'Keep advising and their character will take shape.';
+
+  try {
+    const j = JSON.parse(localStorage.getItem('fin-sim-journal') || '[]').filter(x => x.note);
+    if (j.length) {
+      document.getElementById('journalCard').style.display = 'block';
+      document.getElementById('journal').innerHTML = j.slice(0, 6).map(x =>
+        `<div class="mo"><b>${esc(x.event)}</b><span>${esc(x.note)}</span></div>`).join('');
+    }
+  } catch (e) {}
+})();
+</script>
+</body>
+</html>

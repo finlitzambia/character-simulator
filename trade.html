@@ -65,7 +65,7 @@ body{font-family:var(--ff);background:var(--bg);color:var(--ink);line-height:1.5
 .msg.ok{background:var(--gl);color:var(--gx)}
 </style>
 </head>
-<body>
+<body data-guard="trade">
 
 <div class="topbar">
   <a href="index.html" class="back">←</a>
@@ -110,6 +110,7 @@ body{font-family:var(--ff);background:var(--bg);color:var(--ink);line-height:1.5
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase-client.js"></script>
 <script src="js/utils.js"></script>
+<script src="js/story-client.js"></script>
 <script>
 let currentUser = null;
 let currentCash = 0;
@@ -139,6 +140,16 @@ let side = 'buy';
       <div class="li-price">${fmtKwacha(ins.current_price)}</div>
     </div>
   `).join('') || '<p style="color:var(--ink3);font-size:13px">No instruments available yet.</p>';
+
+  // Deep-link support: trade.html?ticker=REIZ opens straight to that instrument's panel
+  const params = new URLSearchParams(window.location.search);
+  const preselectTicker = params.get('ticker');
+  if (preselectTicker) {
+    const match = (instruments || []).find(
+      ins => ins.ticker.toUpperCase() === preselectTicker.toUpperCase()
+    );
+    if (match) openPanel(match);
+  }
 })();
 
 async function openPanel(instrument) {
@@ -207,37 +218,16 @@ async function confirmTrade() {
   confirmBtn.disabled = true;
 
   try {
-    // 1. Record the trade
-    const { data: trade, error: tradeErr } = await supabase.from('trades').insert({
-      profile_id: currentUser.id,
-      instrument_id: selectedInstrument.id,
-      side,
-      quantity: qty,
-      price_at_trade: price,
-      total_value: total
-    }).select().single();
-    if (tradeErr) throw tradeErr;
-
-    // 2. Move cash
-    const cashDelta = side === 'buy' ? -total : total;
-    const newCash = currentCash + cashDelta;
-    await supabase.from('cash_ledger').insert({
-      profile_id: currentUser.id,
-      amount: cashDelta,
-      reason: side === 'buy' ? 'trade_buy' : 'trade_sell',
-      related_table: 'trades',
-      related_id: trade.id
+    const { data: res, error: rpcErr } = await supabase.rpc('sim_trade', {
+      p_instrument_id: selectedInstrument.id, p_side: side, p_qty: qty
     });
-    await supabase.from('profiles').update({ cash_balance: newCash }).eq('id', currentUser.id);
-
-    // 3. Update holdings (upsert with recalculated average buy price on buy)
-    const newQty = side === 'buy' ? selectedHoldingQty + qty : selectedHoldingQty - qty;
-    await supabase.from('holdings').upsert({
-      profile_id: currentUser.id,
-      instrument_id: selectedInstrument.id,
-      quantity: newQty,
-      avg_buy_price: price // simplified v1: latest trade price; refine to weighted avg later
-    }, { onConflict: 'profile_id,instrument_id' });
+    if (rpcErr || !res || res.error) {
+      const e = res && res.error;
+      throw new Error(e === 'insufficient_cash' ? `You only have ${fmtKwacha(res.cash)} in cash.`
+        : e === 'insufficient_holding' ? `You only hold ${res.held} of this instrument.`
+        : e === 'locked' ? 'Trade is not unlocked yet.' : 'Trade failed. Try again.');
+    }
+    const newCash = Number(res.cash);
 
     msgEl.textContent = `${side === 'buy' ? 'Bought' : 'Sold'} ${qty} ${selectedInstrument.ticker}.`;
     msgEl.className = 'msg show ok';
