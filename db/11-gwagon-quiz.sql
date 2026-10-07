@@ -324,6 +324,8 @@ begin
 end $$;
 
 -- ── content ──
+-- the first version used some of the same keys (cash_gig, coin_tip): rename them so the new questions can reuse them
+update quiz_presets set question_key = 'old_' || question_key where id < 100 and question_key not like 'old\_%';
 update quiz_presets set is_active = false where id < 100;
 insert into quiz_presets (id, question_key, emoji, prompt, options, wise_index) values
 (101, $k$tender$k$, $k$🏗️$k$, $t$A cousin in government whispers: "I can get you the road-repair contract. Small 'facilitation fee' needed."$t$, $j$[{"text": "Pay the fee. That's how things move", "traits": {"shortcut": 3, "boldness": 1}}, {"text": "Ask for the paperwork before I decide anything", "traits": {"prudence": 3}}, {"text": "Bid openly. If I lose, I lose", "traits": {"discipline": 3}}, {"text": "Take it and subcontract to the loudest person I know", "traits": {"shortcut": 2, "status": 1, "generosity": 1}}]$j$::jsonb, 0),
