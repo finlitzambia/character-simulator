@@ -269,7 +269,7 @@ create or replace function track_event(p_kind text, p_code text default null, p_
 returns void language plpgsql security definer set search_path = public as $$
 begin
   if p_kind is null or p_kind <> all (array['quiz_page','quiz_open','quiz_start','quiz_finish','share_creator','share_result','copy_link',
-       'lesson_click','make_own','sim_click','board_view','lesson_open','home_view','home_quiz_click','retake','quiz_made']) then return; end if;
+       'lesson_click','make_own','sim_click','board_view','lesson_open','home_view','home_quiz_click','retake','quiz_made','social_click','social_popup']) then return; end if;
   if not quiz_rate_ok('track', 1500) then return; end if;
   insert into quiz_events (kind, code, vid, meta)
   values (p_kind, left(upper(regexp_replace(coalesce(p_code, ''), '[^A-Za-z0-9]', '', 'g')), 8), left(coalesce(p_vid, ''), 40),
